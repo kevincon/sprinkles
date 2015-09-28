@@ -1,0 +1,18 @@
+{
+  "uuid": "ab23490b-fe15-400d-839c-66384f365ed9",
+  "shortName": "donut",
+  "longName": "donut",
+  "companyName": "MakeAwesomeHappen",
+  "versionLabel": "1.0",
+  "sdkVersion": "3",
+  "targetPlatforms": ["aplite", "basalt", "chalk"],
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}

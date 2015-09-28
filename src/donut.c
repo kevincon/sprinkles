@@ -6,6 +6,9 @@ typedef struct {
   BitmapLayer *homer_layer;
   Layer *homer_eyes_layer;
   Layer *hands_layer;
+  int current_seconds;
+  int current_minutes;
+  int current_hours;
 } DonutAppData;
 
 static DonutAppData *s_app_data;
@@ -16,27 +19,35 @@ static GRect prv_shim_grect_centered_from_polar(GRect rect, GOvalScaleMode scale
                point_centered_from_polar.y - (size.h / 2), size.w, size.h);
 }
 
-static GRect prv_rect_from_polar(const GPoint *center, uint16_t radius) {
-  const int16_t diameter = radius * 2;
-  return GRect(center->x - radius, center->y - radius, diameter, diameter);
-}
-
 static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
 
 }
 
-static void prv_homer_eyes_layer_update_proc(Layer *layer, GContext *ctx) {
+void prv_draw_pupil(GContext *ctx, const int32_t seconds_angle, const GRect *eye_rect) {
   const int16_t pupil_radius = 3;
+  const GSize pupil_size = GSize(pupil_radius * 2, pupil_radius * 2);
+  const GRect pupil_container_rect = grect_inset((*eye_rect), GEdgeInsets(2 * pupil_radius));
+  const GRect pupil_rect = prv_shim_grect_centered_from_polar(pupil_container_rect, GOvalScaleModeFitCircle,
+                                                              seconds_angle, pupil_size);
+  graphics_fill_radial(ctx, pupil_rect, GOvalScaleModeFitCircle, pupil_radius, 0, TRIG_MAX_ANGLE);
+}
+
+static void prv_homer_eyes_layer_update_proc(Layer *layer, GContext *ctx) {
+  const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
 
   const GRect right_eye_rect = GRect(72, 51, 32, 32);
-  const GPoint right_eye_center = grect_center_point(&right_eye_rect);
-  const GRect right_eye_pupil_rect = prv_rect_from_polar(&right_eye_center, pupil_radius);
-  graphics_fill_radial(ctx, right_eye_pupil_rect, GOvalScaleModeFitCircle, pupil_radius, 0, TRIG_MAX_ANGLE);
+  prv_draw_pupil(ctx, seconds_angle, &right_eye_rect);
 
-  const GRect left_eye_rect = GRect(41, 50, 30, 30);
-  const GPoint left_eye_center = grect_center_point(&left_eye_rect);
-  const GRect left_eye_pupil_rect = prv_rect_from_polar(&left_eye_center, pupil_radius);
-  graphics_fill_radial(ctx, left_eye_pupil_rect, GOvalScaleModeFitCircle, pupil_radius, 0, TRIG_MAX_ANGLE);
+  const GRect left_eye_rect = GRect(42, 50, 28, 28);
+  prv_draw_pupil(ctx, seconds_angle, &left_eye_rect);
+}
+
+static void prv_tick_timer_service_handler(struct tm *tick_time, TimeUnits units_changed) {
+  s_app_data->current_hours = tick_time->tm_hour;
+  s_app_data->current_minutes = tick_time->tm_min;
+  s_app_data->current_seconds = tick_time->tm_sec;
+  layer_mark_dirty(s_app_data->homer_eyes_layer);
+  layer_mark_dirty(s_app_data->hands_layer);
 }
 
 static void window_load(Window *window) {
@@ -60,6 +71,10 @@ static void window_load(Window *window) {
   data->hands_layer = layer_create(root_layer_bounds);
   layer_set_update_proc(data->hands_layer, prv_hands_layer_update_proc);
   layer_add_child(root_layer, data->hands_layer);
+
+  const time_t current_time = time(NULL);
+  struct tm *current_time_tm = localtime(&current_time);
+  prv_tick_timer_service_handler(current_time_tm, SECOND_UNIT);
 }
 
 static void window_unload(Window *window) {
@@ -84,6 +99,9 @@ static void init(void) {
     .load = window_load,
     .unload = window_unload,
   });
+
+  tick_timer_service_subscribe(SECOND_UNIT, prv_tick_timer_service_handler);
+
   window_stack_push(s_app_data->window, true /* animated */);
 }
 

@@ -29,7 +29,7 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
   const int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
 
-  graphics_context_set_stroke_color(ctx, GColorFolly);
+  graphics_context_set_stroke_color(ctx, GColorRed);
   const uint8_t minutes_and_hours_stroke_width = 6;
   graphics_context_set_stroke_width(ctx, minutes_and_hours_stroke_width);
 
@@ -150,6 +150,7 @@ static void init(void) {
     .load = window_load,
     .unload = window_unload,
   });
+  window_set_background_color(s_app_data->window, GColorPictonBlue);
 
   tick_timer_service_subscribe(SECOND_UNIT, prv_tick_timer_service_handler);
 

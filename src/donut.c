@@ -21,12 +21,17 @@ static GRect prv_shim_grect_centered_from_polar(GRect rect, GOvalScaleMode scale
 }
 
 static GRect prv_get_seconds_forward_rect(const GRect *layer_bounds) {
-  return grect_inset(*layer_bounds, GEdgeInsets(layer_bounds->size.w / 12));
+  return grect_inset(*layer_bounds, GEdgeInsets(2));
 }
 
-static GPoint prv_get_seconds_perimeter_point(const GRect *layer_bounds, int32_t seconds_angle) {
-  const GRect seconds_perimeter_rect = prv_get_seconds_forward_rect(layer_bounds);
-  return gpoint_from_polar(seconds_perimeter_rect, GOvalScaleModeFitCircle, seconds_angle);
+static GRect prv_get_donut_orbit_rect(const GRect *layer_bounds) {
+  const GRect seconds_forward_rect = prv_get_seconds_forward_rect(layer_bounds);
+  return grect_inset(seconds_forward_rect, GEdgeInsets(seconds_forward_rect.size.w / 10));
+}
+
+static GPoint prv_get_donut_orbit_perimeter_point(const GRect *layer_bounds, int32_t seconds_angle) {
+  const GRect donut_perimeter_rect = prv_get_donut_orbit_rect(layer_bounds);
+  return gpoint_from_polar(donut_perimeter_rect, GOvalScaleModeFitCircle, seconds_angle);
 }
 
 static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle) {
@@ -43,13 +48,13 @@ void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoin
   const uint8_t seconds_forward_stroke_width = 1;
   graphics_context_set_stroke_width(ctx, seconds_forward_stroke_width);
 
-  const GPoint seconds_forward_point = prv_get_seconds_perimeter_point(layer_bounds, seconds_angle);
+  const GRect seconds_forward_rect = prv_get_seconds_forward_rect(layer_bounds);
+  const GPoint seconds_forward_point = gpoint_from_polar(seconds_forward_rect, GOvalScaleModeFitCircle, seconds_angle);
   graphics_draw_line(ctx, (*center), seconds_forward_point);
 
   // Draw the thicker back part of the seconds hand
   const uint8_t seconds_backward_stroke_width = 2;
   graphics_context_set_stroke_width(ctx, seconds_backward_stroke_width);
-  const GRect seconds_forward_rect = prv_get_seconds_forward_rect(layer_bounds);
   const GRect seconds_backward_rect = grect_inset((*layer_bounds), GEdgeInsets(seconds_forward_rect.size.w / 2));
   const GPoint seconds_backward_point = gpoint_from_polar(seconds_backward_rect, GOvalScaleModeFitCircle,
                                                           seconds_angle - (TRIG_MAX_ANGLE / 2));
@@ -60,7 +65,7 @@ void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoin
   graphics_fill_circle(ctx, (*center), center_circle_radius);
 
   // Draw the donut near the end of the seconds hand
-  const GRect donut_orbit_rect = grect_inset((*layer_bounds), GEdgeInsets((*layer_bounds).size.w / 6));
+  const GRect donut_orbit_rect = prv_get_donut_orbit_rect(layer_bounds);
   const GRect donut_rect = prv_shim_grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
                                                               gbitmap_get_bounds(s_app_data->donut_bitmap).size);
   graphics_context_set_compositing_mode(ctx, GCompOpSet);
@@ -105,13 +110,13 @@ static void prv_homer_eyes_layer_update_proc(Layer *layer, GContext *ctx) {
   const GRect layer_bounds = layer_get_bounds(layer);
   const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
 
-  const GPoint seconds_perimeter_point = prv_get_seconds_perimeter_point(&layer_bounds, seconds_angle);
+  const GPoint donut_orbit_perimeter_point = prv_get_donut_orbit_perimeter_point(&layer_bounds, seconds_angle);
 
   const GRect right_eye_rect = GRect(PBL_IF_ROUND_ELSE(72, 58), 51, 32, 32);
-  prv_draw_pupil(ctx, seconds_angle, &right_eye_rect, &seconds_perimeter_point);
+  prv_draw_pupil(ctx, seconds_angle, &right_eye_rect, &donut_orbit_perimeter_point);
 
   const GRect left_eye_rect = GRect(PBL_IF_ROUND_ELSE(42, 24), 50, 28, 28);
-  prv_draw_pupil(ctx, seconds_angle, &left_eye_rect, &seconds_perimeter_point);
+  prv_draw_pupil(ctx, seconds_angle, &left_eye_rect, &donut_orbit_perimeter_point);
 }
 
 static void prv_tick_timer_service_handler(struct tm *tick_time, TimeUnits units_changed) {

@@ -35,8 +35,20 @@ static GPoint prv_get_donut_orbit_perimeter_point(const GRect *layer_bounds, int
 }
 
 static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle) {
-  const GPoint minutes_point = gpoint_from_polar(*hand_perimeter_rect, GOvalScaleModeFitCircle, angle);
-  graphics_draw_line(ctx, *center, minutes_point);
+  // Draw the thin part of the hand
+  graphics_context_set_stroke_width(ctx, 2);
+  graphics_context_set_stroke_color(ctx, GColorBlack);
+  const GPoint perimeter_point = gpoint_from_polar(*hand_perimeter_rect, GOvalScaleModeFitCircle, angle);
+  graphics_draw_line(ctx, *center, perimeter_point);
+
+  // Draw the elongated part of the hand
+  graphics_context_set_stroke_color(ctx, GColorDarkCandyAppleRed);
+  const uint8_t elongation_stroke_width = 9;
+  graphics_context_set_stroke_width(ctx, elongation_stroke_width);
+  const GRect elongation_perimeter_rect = grect_inset(*hand_perimeter_rect,
+                                                      GEdgeInsets(hand_perimeter_rect->size.w / 5));
+  const GPoint elongation_point = gpoint_from_polar(elongation_perimeter_rect, GOvalScaleModeFitCircle, angle);
+  graphics_draw_line(ctx, perimeter_point, elongation_point);
 }
 
 void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoint *center) {
@@ -77,16 +89,12 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   const GPoint center = grect_center_point(&layer_bounds);
 
   // Minutes and hours
-  graphics_context_set_stroke_color(ctx, GColorRed);
-  const uint8_t minutes_and_hours_stroke_width = 6;
-  graphics_context_set_stroke_width(ctx, minutes_and_hours_stroke_width);
-
   const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
-  const GRect minutes_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 12));
+  const GRect minutes_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 18));
   prv_draw_major_hands(ctx, &center, &minutes_rect, minutes_angle);
 
   const int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
-  const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 5));
+  const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 6));
   prv_draw_major_hands(ctx, &center, &hours_rect, hours_angle);
 
   // Seconds

@@ -20,6 +20,15 @@ static GRect prv_shim_grect_centered_from_polar(GRect rect, GOvalScaleMode scale
                point_centered_from_polar.y - (size.h / 2), size.w, size.h);
 }
 
+static GRect prv_get_seconds_forward_rect(const GRect *layer_bounds) {
+  return grect_inset(*layer_bounds, GEdgeInsets(layer_bounds->size.w / 12));
+}
+
+static GPoint prv_get_seconds_perimeter_point(const GRect *layer_bounds, int32_t seconds_angle) {
+  const GRect seconds_perimeter_rect = prv_get_seconds_forward_rect(layer_bounds);
+  return gpoint_from_polar(seconds_perimeter_rect, GOvalScaleModeFitCircle, seconds_angle);
+}
+
 static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   const GRect layer_bounds = layer_get_bounds(layer);
   const GPoint center = grect_center_point(&layer_bounds);
@@ -49,19 +58,18 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   const uint8_t seconds_forward_stroke_width = 1;
   graphics_context_set_stroke_width(ctx, seconds_forward_stroke_width);
 
-  const GRect seconds_forward_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 12));
-  const GPoint seconds_forward_point = gpoint_from_polar(seconds_forward_rect, GOvalScaleModeFitCircle, seconds_angle);
+  const GPoint seconds_forward_point = prv_get_seconds_perimeter_point(&layer_bounds, seconds_angle);
   graphics_draw_line(ctx, center, seconds_forward_point);
 
   const uint8_t seconds_backward_stroke_width = 2;
   graphics_context_set_stroke_width(ctx, seconds_backward_stroke_width);
+  const GRect seconds_forward_rect = prv_get_seconds_forward_rect(&layer_bounds);
   const GRect seconds_backward_rect = grect_inset(layer_bounds, GEdgeInsets(seconds_forward_rect.size.w / 2));
   const GPoint seconds_backward_point = gpoint_from_polar(seconds_backward_rect, GOvalScaleModeFitCircle,
                                                           seconds_angle - (TRIG_MAX_ANGLE / 2));
   graphics_draw_line(ctx, center, seconds_backward_point);
 
   const int16_t center_circle_radius = 5;
-  const int16_t center_circle_diameter = center_circle_radius * 2;
   graphics_fill_circle(ctx, center, center_circle_radius);
   const GRect donut_orbit_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 6));
   const GRect donut_rect = prv_shim_grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
@@ -70,23 +78,30 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   graphics_draw_bitmap_in_rect(ctx, s_app_data->donut_bitmap, donut_rect);
 }
 
-void prv_draw_pupil(GContext *ctx, const int32_t seconds_angle, const GRect *eye_rect) {
+void prv_draw_pupil(GContext *ctx, const int32_t seconds_angle, const GRect *eye_rect,
+                    const GPoint *seconds_perimeter_point) {
   const int16_t pupil_radius = 3;
   const GSize pupil_size = GSize(pupil_radius * 2, pupil_radius * 2);
   const GRect pupil_container_rect = grect_inset((*eye_rect), GEdgeInsets(2 * pupil_radius));
+  const GPoint pupil_center = grect_center_point(&pupil_container_rect);
+  const int32_t pupil_angle = atan2_lookup(seconds_perimeter_point->y - pupil_center.y,
+                                           seconds_perimeter_point->x - pupil_center.x) + DEG_TO_TRIGANGLE(90);
   const GRect pupil_rect = prv_shim_grect_centered_from_polar(pupil_container_rect, GOvalScaleModeFitCircle,
-                                                              seconds_angle, pupil_size);
+                                                              pupil_angle, pupil_size);
   graphics_fill_radial(ctx, pupil_rect, GOvalScaleModeFitCircle, pupil_radius, 0, TRIG_MAX_ANGLE);
 }
 
 static void prv_homer_eyes_layer_update_proc(Layer *layer, GContext *ctx) {
+  const GRect layer_bounds = layer_get_bounds(layer);
   const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
 
+  const GPoint seconds_perimeter_point = prv_get_seconds_perimeter_point(&layer_bounds, seconds_angle);
+
   const GRect right_eye_rect = GRect(PBL_IF_ROUND_ELSE(72, 58), 51, 32, 32);
-  prv_draw_pupil(ctx, seconds_angle, &right_eye_rect);
+  prv_draw_pupil(ctx, seconds_angle, &right_eye_rect, &seconds_perimeter_point);
 
   const GRect left_eye_rect = GRect(PBL_IF_ROUND_ELSE(42, 24), 50, 28, 28);
-  prv_draw_pupil(ctx, seconds_angle, &left_eye_rect);
+  prv_draw_pupil(ctx, seconds_angle, &left_eye_rect, &seconds_perimeter_point);
 }
 
 static void prv_tick_timer_service_handler(struct tm *tick_time, TimeUnits units_changed) {

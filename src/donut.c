@@ -14,12 +14,6 @@ typedef struct {
 
 static DonutAppData *s_app_data;
 
-static GRect prv_shim_grect_centered_from_polar(GRect rect, GOvalScaleMode scale_mode, int32_t angle, GSize size) {
-  const GPoint point_centered_from_polar = gpoint_from_polar(rect, scale_mode, angle);
-  return GRect(point_centered_from_polar.x - (size.w / 2),
-               point_centered_from_polar.y - (size.h / 2), size.w, size.h);
-}
-
 static GRect prv_get_seconds_forward_rect(const GRect *layer_bounds) {
   return grect_inset(*layer_bounds, GEdgeInsets(2));
 }
@@ -79,8 +73,8 @@ void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoin
 
   // Draw the donut near the end of the seconds hand
   const GRect donut_orbit_rect = prv_get_donut_orbit_rect(layer_bounds);
-  const GRect donut_rect = prv_shim_grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
-                                                              gbitmap_get_bounds(s_app_data->donut_bitmap).size);
+  const GRect donut_rect = grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
+                                                     gbitmap_get_bounds(s_app_data->donut_bitmap).size);
   graphics_context_set_compositing_mode(ctx, GCompOpSet);
   graphics_draw_bitmap_in_rect(ctx, s_app_data->donut_bitmap, donut_rect);
 }
@@ -110,8 +104,8 @@ void prv_draw_pupil(GContext *ctx, const int32_t seconds_angle, const GRect *eye
   const GPoint pupil_center = grect_center_point(&pupil_container_rect);
   const int32_t pupil_angle = atan2_lookup(seconds_perimeter_point->y - pupil_center.y,
                                            seconds_perimeter_point->x - pupil_center.x) + DEG_TO_TRIGANGLE(90);
-  const GRect pupil_rect = prv_shim_grect_centered_from_polar(pupil_container_rect, GOvalScaleModeFitCircle,
-                                                              pupil_angle, pupil_size);
+  const GRect pupil_rect = grect_centered_from_polar(pupil_container_rect, GOvalScaleModeFitCircle,
+                                                     pupil_angle, pupil_size);
   graphics_fill_radial(ctx, pupil_rect, GOvalScaleModeFitCircle, pupil_radius, 0, TRIG_MAX_ANGLE);
 }
 

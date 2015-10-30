@@ -191,7 +191,8 @@ static void init(void) {
     .load = window_load,
     .unload = window_unload,
   });
-  window_set_background_color(s_app_data->window, GColorPictonBlue);
+  const GColor simpsons_sky_blue = GColorFromHEX(0x60B8E3);
+  window_set_background_color(s_app_data->window, simpsons_sky_blue);
 
   tick_timer_service_subscribe(SECOND_UNIT, prv_tick_timer_service_handler);
 

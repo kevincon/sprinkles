@@ -8,3 +8,6 @@ build
 .idea/
 CMakeLists.txt
 
+# Mac Finder
+.DS_Store
+

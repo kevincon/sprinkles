@@ -68,7 +68,7 @@ void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoin
   // Draw the thicker back part of the seconds hand
   const uint8_t seconds_backward_stroke_width = 2;
   graphics_context_set_stroke_width(ctx, seconds_backward_stroke_width);
-  const GRect seconds_backward_rect = grect_inset((*layer_bounds), GEdgeInsets(seconds_forward_rect.size.w / 2));
+  const GRect seconds_backward_rect = grect_inset((*layer_bounds), GEdgeInsets(seconds_forward_rect.size.w * 43   / 100));
   const GPoint seconds_backward_point = gpoint_from_polar(seconds_backward_rect, GOvalScaleModeFitCircle,
                                                           seconds_angle - (TRIG_MAX_ANGLE / 2));
   graphics_draw_line(ctx, (*center), seconds_backward_point);

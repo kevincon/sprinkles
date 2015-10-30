@@ -42,7 +42,8 @@ static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRec
   graphics_draw_line(ctx, *center, perimeter_point);
 
   // Draw the elongated part of the hand
-  graphics_context_set_stroke_color(ctx, GColorDarkCandyAppleRed);
+  const GColor simpsons_logo_red_color = GColorFromHEX(0xF0182D);
+  graphics_context_set_stroke_color(ctx, simpsons_logo_red_color);
   const uint8_t elongation_stroke_width = 9;
   graphics_context_set_stroke_width(ctx, elongation_stroke_width);
   const GRect elongation_perimeter_rect = grect_inset(*hand_perimeter_rect,

@@ -7,12 +7,17 @@ typedef struct {
   Layer *homer_eyes_layer;
   GBitmap *donut_bitmap;
   Layer *hands_layer;
+  AnimationProgress intro_animation_progress;
   int current_seconds;
   int current_minutes;
   int current_hours;
 } DonutAppData;
 
 static DonutAppData *s_app_data;
+
+static int64_t prv_interpolate_int64_linear(int64_t from, int64_t to, AnimationProgress progress) {
+  return from + ((progress * (to - from)) / ANIMATION_NORMALIZED_MAX);
+}
 
 static GRect prv_get_seconds_forward_rect(const GRect *layer_bounds) {
   return grect_inset(*layer_bounds, GEdgeInsets(2));
@@ -47,7 +52,8 @@ static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRec
 }
 
 void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoint *center) {
-  const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
+  int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
+  seconds_angle = prv_interpolate_int64_linear(0, seconds_angle, s_app_data->intro_animation_progress);
 
   graphics_context_set_stroke_color(ctx, GColorBlack);
 
@@ -84,11 +90,13 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   const GPoint center = grect_center_point(&layer_bounds);
 
   // Minutes and hours
-  const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
+  int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
+  minutes_angle = prv_interpolate_int64_linear(0, minutes_angle, s_app_data->intro_animation_progress);
   const GRect minutes_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 18));
   prv_draw_major_hands(ctx, &center, &minutes_rect, minutes_angle);
 
-  const int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
+  int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
+  hours_angle = prv_interpolate_int64_linear(0, hours_angle, s_app_data->intro_animation_progress);
   const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 7));
   prv_draw_major_hands(ctx, &center, &hours_rect, hours_angle);
 
@@ -132,6 +140,36 @@ static void prv_tick_timer_service_handler(struct tm *tick_time, TimeUnits units
   s_app_data->current_seconds = tick_time->tm_sec;
   layer_mark_dirty(s_app_data->homer_eyes_layer);
   layer_mark_dirty(s_app_data->hands_layer);
+}
+
+static void prv_intro_animation_update(Animation *animation,
+                                       const AnimationProgress progress) {
+  if (s_app_data) {
+    s_app_data->intro_animation_progress = progress;
+    layer_mark_dirty(window_get_root_layer(s_app_data->window));
+  }
+}
+
+static const AnimationImplementation s_intro_animation_implementation = {
+  .update = prv_intro_animation_update,
+};
+
+static Animation *prv_create_intro_animation(void) {
+  Animation *intro_animation = animation_create();
+  animation_set_implementation(intro_animation, &s_intro_animation_implementation);
+  animation_set_duration(intro_animation, 1200);
+  animation_set_curve(intro_animation, AnimationCurveEaseOut);
+  return intro_animation;
+}
+
+static void prv_start_intro_animation(void) {
+  DonutAppData *data = s_app_data;
+  if (!data) {
+    return;
+  }
+
+  Animation *intro_animation = prv_create_intro_animation();
+  animation_schedule(intro_animation);
 }
 
 static void window_load(Window *window) {
@@ -181,6 +219,14 @@ static void window_unload(Window *window) {
   window_destroy(window);
 }
 
+static void prv_app_did_focus(bool did_focus) {
+  if (!did_focus) {
+    return;
+  }
+  app_focus_service_unsubscribe();
+  prv_start_intro_animation();
+}
+
 static void init(void) {
   s_app_data = malloc(sizeof(DonutAppData));
   memset(s_app_data, 0, sizeof(DonutAppData));
@@ -197,6 +243,11 @@ static void init(void) {
   tick_timer_service_subscribe(SECOND_UNIT, prv_tick_timer_service_handler);
 
   window_stack_push(s_app_data->window, true /* animated */);
+
+  // Subscribe to app focus events so we can schedule an intro animation
+  app_focus_service_subscribe_handlers((AppFocusHandlers) {
+    .did_focus = prv_app_did_focus,
+  });
 }
 
 static void deinit(void) {

@@ -121,10 +121,14 @@ static void prv_homer_eyes_layer_update_proc(Layer *layer, GContext *ctx) {
 
   const GPoint donut_orbit_perimeter_point = prv_get_donut_orbit_perimeter_point(&layer_bounds, seconds_angle);
 
-  const GRect right_eye_rect = GRect(PBL_IF_ROUND_ELSE(72, 58), 51, 32, 32);
+  const GEdgeInsets eye_rect_insets = GEdgeInsets(1);
+
+  const GRect right_eye_rect = grect_inset(PBL_IF_ROUND_ELSE(GRect(53, 49, 33, 33),
+                                                             GRect(52, 45, 35, 32)), eye_rect_insets);
   prv_draw_pupil(ctx, seconds_angle, &right_eye_rect, &donut_orbit_perimeter_point);
 
-  const GRect left_eye_rect = GRect(PBL_IF_ROUND_ELSE(42, 24), 50, 28, 28);
+  const GRect left_eye_rect = grect_inset(PBL_IF_ROUND_ELSE(GRect(22, 48, 32, 31),
+                                                            GRect(22, 45, 32, 29)), eye_rect_insets);
   prv_draw_pupil(ctx, seconds_angle, &left_eye_rect, &donut_orbit_perimeter_point);
 }
 
@@ -144,13 +148,17 @@ static void window_load(Window *window) {
 
   data->homer_bitmap = gbitmap_create_with_resource(RESOURCE_ID_HOMER);
 
-  data->homer_layer = bitmap_layer_create(root_layer_bounds);
+  GRect homer_bitmap_layer_frame = root_layer_bounds;
+  homer_bitmap_layer_frame.size = gbitmap_get_bounds(data->homer_bitmap).size;
+  grect_align(&homer_bitmap_layer_frame, &root_layer_bounds, GAlignBottom, true /* clip */);
+
+  data->homer_layer = bitmap_layer_create(homer_bitmap_layer_frame);
   bitmap_layer_set_bitmap(data->homer_layer, data->homer_bitmap);
-  bitmap_layer_set_alignment(data->homer_layer, GAlignBottom);
   bitmap_layer_set_compositing_mode(data->homer_layer, GCompOpSet);
   layer_add_child(root_layer, bitmap_layer_get_layer(data->homer_layer));
 
-  data->homer_eyes_layer = layer_create(root_layer_bounds);
+
+  data->homer_eyes_layer = layer_create(homer_bitmap_layer_frame);
   layer_set_update_proc(data->homer_eyes_layer, prv_homer_eyes_layer_update_proc);
   layer_add_child(root_layer, data->homer_eyes_layer);
 

@@ -95,7 +95,7 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   prv_draw_major_hands(ctx, &center, &minutes_rect, minutes_angle);
 
   const int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
-  const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 6));
+  const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 7));
   prv_draw_major_hands(ctx, &center, &hours_rect, hours_angle);
 
   // Seconds

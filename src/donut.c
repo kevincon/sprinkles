@@ -28,9 +28,17 @@ static GRect prv_get_donut_orbit_rect(const GRect *layer_bounds) {
   return grect_inset(seconds_forward_rect, GEdgeInsets(seconds_forward_rect.size.w / 10));
 }
 
+static GRect prv_get_donut_rect(const GRect *layer_bounds, int32_t seconds_angle) {
+  const GRect donut_orbit_rect = prv_get_donut_orbit_rect(layer_bounds);
+  GRect donut_rect = grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
+                                               gbitmap_get_bounds(s_app_data->donut_bitmap).size);
+  donut_rect.origin.y = prv_interpolate_int64_linear(0, donut_rect.origin.y, s_app_data->intro_animation_progress);
+  return donut_rect;
+}
+
 static GPoint prv_get_donut_orbit_perimeter_point(const GRect *layer_bounds, int32_t seconds_angle) {
-  const GRect donut_perimeter_rect = prv_get_donut_orbit_rect(layer_bounds);
-  return gpoint_from_polar(donut_perimeter_rect, GOvalScaleModeFitCircle, seconds_angle);
+  const GRect donut_rect = prv_get_donut_rect(layer_bounds, seconds_angle);
+  return grect_center_point(&donut_rect);
 }
 
 static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle) {
@@ -51,9 +59,8 @@ static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRec
   graphics_draw_line(ctx, perimeter_point, elongation_point);
 }
 
-void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoint *center) {
-  int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
-  seconds_angle = prv_interpolate_int64_linear(0, seconds_angle, s_app_data->intro_animation_progress);
+static void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoint *center) {
+  const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
 
   graphics_context_set_stroke_color(ctx, GColorBlack);
 
@@ -62,7 +69,13 @@ void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoin
   graphics_context_set_stroke_width(ctx, seconds_forward_stroke_width);
 
   const GRect seconds_forward_rect = prv_get_seconds_forward_rect(layer_bounds);
-  const GPoint seconds_forward_point = gpoint_from_polar(seconds_forward_rect, GOvalScaleModeFitCircle, seconds_angle);
+  // Interpolate the seconds forward rect so that the seconds hand grows out to pierce the donut
+  const int16_t inset = prv_interpolate_int64_linear(seconds_forward_rect.size.w / 2, 0,
+                                                     s_app_data->intro_animation_progress);
+  const GRect interpolated_seconds_forward_rect = grect_inset(seconds_forward_rect, GEdgeInsets(inset));
+
+  const GPoint seconds_forward_point = gpoint_from_polar(interpolated_seconds_forward_rect, GOvalScaleModeFitCircle,
+                                                         seconds_angle);
   graphics_draw_line(ctx, (*center), seconds_forward_point);
 
   // Draw the thicker back part of the seconds hand
@@ -78,9 +91,7 @@ void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoin
   graphics_fill_circle(ctx, (*center), center_circle_radius);
 
   // Draw the donut near the end of the seconds hand
-  const GRect donut_orbit_rect = prv_get_donut_orbit_rect(layer_bounds);
-  const GRect donut_rect = grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
-                                                     gbitmap_get_bounds(s_app_data->donut_bitmap).size);
+  const GRect donut_rect = prv_get_donut_rect(layer_bounds, seconds_angle);
   graphics_context_set_compositing_mode(ctx, GCompOpSet);
   graphics_draw_bitmap_in_rect(ctx, s_app_data->donut_bitmap, donut_rect);
 }
@@ -90,13 +101,11 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   const GPoint center = grect_center_point(&layer_bounds);
 
   // Minutes and hours
-  int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
-  minutes_angle = prv_interpolate_int64_linear(0, minutes_angle, s_app_data->intro_animation_progress);
+  const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
   const GRect minutes_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 18));
   prv_draw_major_hands(ctx, &center, &minutes_rect, minutes_angle);
 
   int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
-  hours_angle = prv_interpolate_int64_linear(0, hours_angle, s_app_data->intro_animation_progress);
   const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 7));
   prv_draw_major_hands(ctx, &center, &hours_rect, hours_angle);
 
@@ -157,8 +166,8 @@ static const AnimationImplementation s_intro_animation_implementation = {
 static Animation *prv_create_intro_animation(void) {
   Animation *intro_animation = animation_create();
   animation_set_implementation(intro_animation, &s_intro_animation_implementation);
-  animation_set_duration(intro_animation, 1200);
-  animation_set_curve(intro_animation, AnimationCurveEaseOut);
+  animation_set_duration(intro_animation, 500);
+  animation_set_curve(intro_animation, AnimationCurveEaseIn);
   return intro_animation;
 }
 

@@ -19,29 +19,29 @@ static int64_t prv_interpolate_int64_linear(int64_t from, int64_t to, AnimationP
   return from + ((progress * (to - from)) / ANIMATION_NORMALIZED_MAX);
 }
 
-static GRect prv_get_seconds_forward_rect(const GRect *layer_bounds) {
+static GRect prv_get_minutes_forward_rect(const GRect *layer_bounds) {
   return grect_inset(*layer_bounds, GEdgeInsets(2));
 }
 
 static GRect prv_get_donut_orbit_rect(const GRect *layer_bounds) {
-  const GRect seconds_forward_rect = prv_get_seconds_forward_rect(layer_bounds);
-  return grect_inset(seconds_forward_rect, GEdgeInsets(seconds_forward_rect.size.w / 10));
+  const GRect minutes_forward_rect = prv_get_minutes_forward_rect(layer_bounds);
+  return grect_inset(minutes_forward_rect, GEdgeInsets(minutes_forward_rect.size.w / 10));
 }
 
-static GRect prv_get_donut_rect(const GRect *layer_bounds, int32_t seconds_angle) {
+static GRect prv_get_donut_rect(const GRect *layer_bounds, int32_t minutes_angle) {
   const GRect donut_orbit_rect = prv_get_donut_orbit_rect(layer_bounds);
-  GRect donut_rect = grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
+  GRect donut_rect = grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, minutes_angle,
                                                gbitmap_get_bounds(s_app_data->donut_bitmap).size);
   donut_rect.origin.y = prv_interpolate_int64_linear(0, donut_rect.origin.y, s_app_data->intro_animation_progress);
   return donut_rect;
 }
 
-static GPoint prv_get_donut_orbit_perimeter_point(const GRect *layer_bounds, int32_t seconds_angle) {
-  const GRect donut_rect = prv_get_donut_rect(layer_bounds, seconds_angle);
+static GPoint prv_get_donut_orbit_perimeter_point(const GRect *layer_bounds, int32_t minutes_angle) {
+  const GRect donut_rect = prv_get_donut_rect(layer_bounds, minutes_angle);
   return grect_center_point(&donut_rect);
 }
 
-static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle) {
+static void prv_draw_hour_hand(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle) {
   // Draw the thin part of the hand
   graphics_context_set_stroke_width(ctx, 2);
   graphics_context_set_stroke_color(ctx, GColorBlack);
@@ -59,39 +59,37 @@ static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRec
   graphics_draw_line(ctx, perimeter_point, elongation_point);
 }
 
-static void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoint *center) {
-  const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
+static void prv_draw_minutes_hand(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle) {
+  // Draw the thin part of the hand
+  graphics_context_set_stroke_width(ctx, 2);
+  graphics_context_set_stroke_color(ctx, GColorBlack);
+  const GPoint perimeter_point = gpoint_from_polar(*hand_perimeter_rect, GOvalScaleModeFitCircle, angle);
+  graphics_draw_line(ctx, *center, perimeter_point);
+
+  // Draw the elongated part of the hand
+  const GColor simpsons_black_color = GColorFromHEX(0x0000);
+  graphics_context_set_stroke_color(ctx, simpsons_black_color);
+  const uint8_t elongation_stroke_width = 2;
+  graphics_context_set_stroke_width(ctx, elongation_stroke_width);
+  const GRect elongation_perimeter_rect = grect_inset(*hand_perimeter_rect,
+                                                      GEdgeInsets(hand_perimeter_rect->size.w / 5));
+  const GPoint elongation_point = gpoint_from_polar(elongation_perimeter_rect, GOvalScaleModeFitCircle, angle);
+  graphics_draw_line(ctx, perimeter_point, elongation_point);
+}
+
+
+static void prv_draw_donut_hand(GContext *ctx, const GRect *layer_bounds, const GPoint *center) {
+  const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
 
   graphics_context_set_stroke_color(ctx, GColorBlack);
 
-  // Draw the thinner front part of the seconds hand
-  const uint8_t seconds_forward_stroke_width = 1;
-  graphics_context_set_stroke_width(ctx, seconds_forward_stroke_width);
-
-  const GRect seconds_forward_rect = prv_get_seconds_forward_rect(layer_bounds);
-  // Interpolate the seconds forward rect so that the seconds hand grows out to pierce the donut
-  const int16_t inset = prv_interpolate_int64_linear(seconds_forward_rect.size.w / 2, 0,
-                                                     s_app_data->intro_animation_progress);
-  const GRect interpolated_seconds_forward_rect = grect_inset(seconds_forward_rect, GEdgeInsets(inset));
-
-  const GPoint seconds_forward_point = gpoint_from_polar(interpolated_seconds_forward_rect, GOvalScaleModeFitCircle,
-                                                         seconds_angle);
-  graphics_draw_line(ctx, (*center), seconds_forward_point);
-
-  // Draw the thicker back part of the seconds hand
-  const uint8_t seconds_backward_stroke_width = 2;
-  graphics_context_set_stroke_width(ctx, seconds_backward_stroke_width);
-  const GRect seconds_backward_rect = grect_inset((*layer_bounds), GEdgeInsets(seconds_forward_rect.size.w * 43   / 100));
-  const GPoint seconds_backward_point = gpoint_from_polar(seconds_backward_rect, GOvalScaleModeFitCircle,
-                                                          seconds_angle - (TRIG_MAX_ANGLE / 2));
-  graphics_draw_line(ctx, (*center), seconds_backward_point);
-
+ 
   // Draw the black dot in the center of the watchface
   const int16_t center_circle_radius = 5;
   graphics_fill_circle(ctx, (*center), center_circle_radius);
 
-  // Draw the donut near the end of the seconds hand
-  const GRect donut_rect = prv_get_donut_rect(layer_bounds, seconds_angle);
+  // Draw the donut near the end of the minutes hand
+  const GRect donut_rect = prv_get_donut_rect(layer_bounds, minutes_angle);
   graphics_context_set_compositing_mode(ctx, GCompOpSet);
   graphics_draw_bitmap_in_rect(ctx, s_app_data->donut_bitmap, donut_rect);
 }
@@ -103,24 +101,24 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
   // Minutes and hours
   const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
   const GRect minutes_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 18));
-  prv_draw_major_hands(ctx, &center, &minutes_rect, minutes_angle);
+  prv_draw_minutes_hand(ctx, &center, &minutes_rect, minutes_angle);
 
   int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
   const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 7));
-  prv_draw_major_hands(ctx, &center, &hours_rect, hours_angle);
+  prv_draw_hour_hand(ctx, &center, &hours_rect, hours_angle);
 
-  // Seconds
-  prv_draw_seconds_hand(ctx, &layer_bounds, &center);
+  // minute donut
+  prv_draw_donut_hand(ctx, &layer_bounds, &center);
 }
 
-void prv_draw_pupil(GContext *ctx, const int32_t seconds_angle, const GRect *eye_rect,
-                    const GPoint *seconds_perimeter_point) {
+void prv_draw_pupil(GContext *ctx, const int32_t minutes_angle, const GRect *eye_rect,
+                    const GPoint *minutes_perimeter_point) {
   const int16_t pupil_radius = 3;
   const GSize pupil_size = GSize(pupil_radius * 2, pupil_radius * 2);
   const GRect pupil_container_rect = grect_inset((*eye_rect), GEdgeInsets(2 * pupil_radius));
   const GPoint pupil_center = grect_center_point(&pupil_container_rect);
-  const int32_t pupil_angle = atan2_lookup(seconds_perimeter_point->y - pupil_center.y,
-                                           seconds_perimeter_point->x - pupil_center.x) + DEG_TO_TRIGANGLE(90);
+  const int32_t pupil_angle = atan2_lookup(minutes_perimeter_point->y - pupil_center.y,
+                                           minutes_perimeter_point->x - pupil_center.x) + DEG_TO_TRIGANGLE(90);
   const GRect pupil_rect = grect_centered_from_polar(pupil_container_rect, GOvalScaleModeFitCircle,
                                                      pupil_angle, pupil_size);
   graphics_fill_radial(ctx, pupil_rect, GOvalScaleModeFitCircle, pupil_radius, 0, TRIG_MAX_ANGLE);
@@ -128,25 +126,25 @@ void prv_draw_pupil(GContext *ctx, const int32_t seconds_angle, const GRect *eye
 
 static void prv_homer_eyes_layer_update_proc(Layer *layer, GContext *ctx) {
   const GRect layer_bounds = layer_get_bounds(layer);
-  const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
+  const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
 
-  const GPoint donut_orbit_perimeter_point = prv_get_donut_orbit_perimeter_point(&layer_bounds, seconds_angle);
+  const GPoint donut_orbit_perimeter_point = prv_get_donut_orbit_perimeter_point(&layer_bounds, minutes_angle);
 
   const GEdgeInsets eye_rect_insets = GEdgeInsets(1);
 
   const GRect right_eye_rect = grect_inset(PBL_IF_ROUND_ELSE(GRect(53, 49, 33, 33),
                                                              GRect(52, 45, 35, 32)), eye_rect_insets);
-  prv_draw_pupil(ctx, seconds_angle, &right_eye_rect, &donut_orbit_perimeter_point);
+  prv_draw_pupil(ctx, minutes_angle, &right_eye_rect, &donut_orbit_perimeter_point);
 
   const GRect left_eye_rect = grect_inset(PBL_IF_ROUND_ELSE(GRect(22, 48, 32, 31),
                                                             GRect(22, 45, 32, 29)), eye_rect_insets);
-  prv_draw_pupil(ctx, seconds_angle, &left_eye_rect, &donut_orbit_perimeter_point);
+  prv_draw_pupil(ctx, minutes_angle, &left_eye_rect, &donut_orbit_perimeter_point);
 }
 
 static void prv_tick_timer_service_handler(struct tm *tick_time, TimeUnits units_changed) {
   s_app_data->current_hours = tick_time->tm_hour;
   s_app_data->current_minutes = tick_time->tm_min;
-  s_app_data->current_seconds = tick_time->tm_sec;
+  s_app_data->current_minutes = tick_time->tm_min;
   layer_mark_dirty(s_app_data->homer_eyes_layer);
   layer_mark_dirty(s_app_data->hands_layer);
 }
@@ -249,7 +247,7 @@ static void init(void) {
   const GColor simpsons_sky_blue = GColorFromHEX(0x60B8E3);
   window_set_background_color(s_app_data->window, simpsons_sky_blue);
 
-  tick_timer_service_subscribe(SECOND_UNIT, prv_tick_timer_service_handler);
+  tick_timer_service_subscribe(MINUTE_UNIT, prv_tick_timer_service_handler);
 
   window_stack_push(s_app_data->window, true /* animated */);
 

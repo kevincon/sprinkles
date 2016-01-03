@@ -47,7 +47,8 @@ void sprinkles_configuration_init(void) {
   app_message_register_inbox_received(prv_app_message_inbox_received_handler);
 }
 
-void sprinkles_configuration_set_callback(SprinklesConfigurationChangedCallback callback, void *context) {
+void sprinkles_configuration_set_callback(SprinklesConfigurationChangedCallback callback,
+                                          void *context) {
   s_sprinkles_configuration_changed_callback = callback;
   s_sprinkles_configuration_callback_context = context;
 }

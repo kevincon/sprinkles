@@ -16,7 +16,8 @@ typedef void (*SprinklesConfigurationChangedCallback)(SprinklesConfiguration *up
 
 void sprinkles_configuration_init(void);
 
-void sprinkles_configuration_set_callback(SprinklesConfigurationChangedCallback callback, void *context);
+void sprinkles_configuration_set_callback(SprinklesConfigurationChangedCallback callback,
+                                          void *context);
 
 SprinklesConfiguration *sprinkles_configuration_get_configuration(void);
 

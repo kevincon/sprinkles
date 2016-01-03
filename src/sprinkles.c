@@ -262,8 +262,7 @@ static void prv_app_did_focus(bool did_focus) {
 }
 
 static void init(void) {
-  s_app_data = malloc(sizeof(SprinklesAppData));
-  memset(s_app_data, 0, sizeof(SprinklesAppData));
+  s_app_data = calloc(1, sizeof(SprinklesAppData));
 
   s_app_data->window = window_create();
   window_set_user_data(s_app_data->window, s_app_data);

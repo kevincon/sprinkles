@@ -3,14 +3,57 @@
   "shortName": "sprinkles",
   "longName": "Sprinkles",
   "companyName": "Kevin Conley",
-  "versionLabel": "1.0",
+  "versionLabel": "1.1",
   "sdkVersion": "3",
   "targetPlatforms": ["basalt", "chalk"],
+  "capabilities": ["configurable"],
   "watchapp": {
     "watchface": true
   },
   "appKeys": {
-    "dummy": 0
+    "background_color": 0,
+    "hour_hand_color": 1,
+    "minute_hand_color": 2,
+    "seconds_hand_enabled": 3,
+    "seconds_hand_color": 4
+  },
+  "preferences": {
+    "embedded": true,
+    "description": "Modify the settings below as needed and then click SAVE.",
+    "items": [
+      {
+        "name": "background_color",
+        "title": "Background color",
+        "type": "color",
+        "default": "0x60B8E3"
+      },
+      {
+        "name": "hour_hand_color",
+        "title": "Hour hand color",
+        "type": "color",
+        "default": "0xF0182D"
+      },
+      {
+        "name": "minute_hand_color",
+        "title": "Minute hand color",
+        "type": "color",
+        "default": "0xF0182D"
+      },
+      {
+        "name": "seconds_hand_enabled",
+        "title": "Enable seconds hand",
+        "type": "boolean",
+        "default": false,
+        "off-text": "Off",
+        "on-text": "On"
+      },
+      {
+        "name": "seconds_hand_color",
+        "title": "Seconds hand color",
+        "type": "color",
+        "default": "0x000000"
+      }
+    ]
   },
   "resources": {
     "media": [

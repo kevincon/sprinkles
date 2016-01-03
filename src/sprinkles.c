@@ -1,5 +1,7 @@
 #include <pebble.h>
 
+#include "sprinkles_configuration.h"
+
 typedef struct {
   Window *window;
   GBitmap *homer_bitmap;
@@ -28,21 +30,31 @@ static GRect prv_get_donut_orbit_rect(const GRect *layer_bounds) {
   return grect_inset(seconds_forward_rect, GEdgeInsets(seconds_forward_rect.size.w / 10));
 }
 
-static GRect prv_get_donut_rect(const GRect *layer_bounds, int32_t seconds_angle) {
+static GRect prv_get_donut_rect(const GRect *layer_bounds, int32_t donut_angle) {
   const GRect donut_orbit_rect = prv_get_donut_orbit_rect(layer_bounds);
-  GRect donut_rect = grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
+  GRect donut_rect = grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, donut_angle,
                                                gbitmap_get_bounds(s_app_data->donut_bitmap).size);
   donut_rect.origin.y = (int16_t)prv_interpolate_int64_linear(0, donut_rect.origin.y,
                                                               s_app_data->intro_animation_progress);
   return donut_rect;
 }
 
-static GPoint prv_get_donut_orbit_perimeter_point(const GRect *layer_bounds, int32_t seconds_angle) {
-  const GRect donut_rect = prv_get_donut_rect(layer_bounds, seconds_angle);
+static int32_t prv_get_donut_angle(void) {
+  // We can draw the donut on either the seconds hand or the minutes hand, depending on the configuration
+  const SprinklesConfiguration *configuration = sprinkles_configuration_get_configuration();
+  const int time_unit_of_interest = configuration->seconds_hand_enabled ? s_app_data->current_seconds :
+                                                                          s_app_data->current_minutes;
+  const int32_t angle_per_time_unit_ratio = TRIG_MAX_ANGLE / 60;
+  return time_unit_of_interest * angle_per_time_unit_ratio;
+}
+
+static GPoint prv_get_donut_orbit_perimeter_point(const GRect *layer_bounds) {
+  const GRect donut_rect = prv_get_donut_rect(layer_bounds, prv_get_donut_angle());
   return grect_center_point(&donut_rect);
 }
 
-static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle) {
+static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle,
+                                 GColor color) {
   // Draw the thin part of the hand
   graphics_context_set_stroke_width(ctx, 2);
   graphics_context_set_stroke_color(ctx, GColorBlack);
@@ -50,8 +62,7 @@ static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRec
   graphics_draw_line(ctx, *center, perimeter_point);
 
   // Draw the elongated part of the hand
-  const GColor simpsons_logo_red_color = GColorFromHEX(0xF0182D);
-  graphics_context_set_stroke_color(ctx, simpsons_logo_red_color);
+  graphics_context_set_stroke_color(ctx, color);
   const uint8_t elongation_stroke_width = 9;
   graphics_context_set_stroke_width(ctx, elongation_stroke_width);
   const GRect elongation_perimeter_rect = grect_inset(*hand_perimeter_rect,
@@ -61,9 +72,11 @@ static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRec
 }
 
 static void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoint *center) {
+  const SprinklesConfiguration *configuration = sprinkles_configuration_get_configuration();
+
   const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
 
-  graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_stroke_color(ctx, configuration->seconds_hand_color);
 
   // Draw the thinner front part of the seconds hand
   const uint8_t seconds_forward_stroke_width = 1;
@@ -86,42 +99,46 @@ static void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, cons
   const GPoint seconds_backward_point = gpoint_from_polar(seconds_backward_rect, GOvalScaleModeFitCircle,
                                                           seconds_angle - (TRIG_MAX_ANGLE / 2));
   graphics_draw_line(ctx, (*center), seconds_backward_point);
+}
+
+static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
+  const SprinklesConfiguration *configuration = sprinkles_configuration_get_configuration();
+  const GRect layer_bounds = layer_get_bounds(layer);
+  const GPoint center = grect_center_point(&layer_bounds);
+
+  // Minutes
+  const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
+  const GRect minutes_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 18));
+  prv_draw_major_hands(ctx, &center, &minutes_rect, minutes_angle, configuration->minute_hand_color);
+
+  // Hours
+  int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
+  const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 7));
+  prv_draw_major_hands(ctx, &center, &hours_rect, hours_angle, configuration->hour_hand_color);
+
+  // Seconds (if enabled in the configuration)
+  if (configuration->seconds_hand_enabled) {
+    prv_draw_seconds_hand(ctx, &layer_bounds, &center);
+  }
 
   // Draw the black dot in the center of the watchface
   const int16_t center_circle_radius = 5;
-  graphics_fill_circle(ctx, (*center), center_circle_radius);
+  graphics_fill_circle(ctx, center, center_circle_radius);
 
-  // Draw the donut near the end of the seconds hand
-  const GRect donut_rect = prv_get_donut_rect(layer_bounds, seconds_angle);
+  // Draw the donut
+  const int32_t donut_angle = prv_get_donut_angle();
+  const GRect donut_rect = prv_get_donut_rect(&layer_bounds, donut_angle);
   graphics_context_set_compositing_mode(ctx, GCompOpSet);
   graphics_draw_bitmap_in_rect(ctx, s_app_data->donut_bitmap, donut_rect);
 }
 
-static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
-  const GRect layer_bounds = layer_get_bounds(layer);
-  const GPoint center = grect_center_point(&layer_bounds);
-
-  // Minutes and hours
-  const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
-  const GRect minutes_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 18));
-  prv_draw_major_hands(ctx, &center, &minutes_rect, minutes_angle);
-
-  int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
-  const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 7));
-  prv_draw_major_hands(ctx, &center, &hours_rect, hours_angle);
-
-  // Seconds
-  prv_draw_seconds_hand(ctx, &layer_bounds, &center);
-}
-
-void prv_draw_pupil(GContext *ctx, const int32_t seconds_angle, const GRect *eye_rect,
-                    const GPoint *seconds_perimeter_point) {
+void prv_draw_pupil(GContext *ctx, const GRect *eye_rect, const GPoint *perimeter_point) {
   const int16_t pupil_radius = 3;
   const GSize pupil_size = GSize(pupil_radius * 2, pupil_radius * 2);
   const GRect pupil_container_rect = grect_inset((*eye_rect), GEdgeInsets(2 * pupil_radius));
   const GPoint pupil_center = grect_center_point(&pupil_container_rect);
-  const int32_t pupil_angle = atan2_lookup(seconds_perimeter_point->y - pupil_center.y,
-                                           seconds_perimeter_point->x - pupil_center.x) + DEG_TO_TRIGANGLE(90);
+  const int32_t pupil_angle = atan2_lookup(perimeter_point->y - pupil_center.y,
+                                           perimeter_point->x - pupil_center.x) + DEG_TO_TRIGANGLE(90);
   const GRect pupil_rect = grect_centered_from_polar(pupil_container_rect, GOvalScaleModeFitCircle,
                                                      pupil_angle, pupil_size);
   graphics_fill_radial(ctx, pupil_rect, GOvalScaleModeFitCircle, pupil_radius, 0, TRIG_MAX_ANGLE);
@@ -129,19 +146,18 @@ void prv_draw_pupil(GContext *ctx, const int32_t seconds_angle, const GRect *eye
 
 static void prv_homer_eyes_layer_update_proc(Layer *layer, GContext *ctx) {
   const GRect layer_bounds = layer_get_bounds(layer);
-  const int32_t seconds_angle = s_app_data->current_seconds * TRIG_MAX_ANGLE / 60;
 
-  const GPoint donut_orbit_perimeter_point = prv_get_donut_orbit_perimeter_point(&layer_bounds, seconds_angle);
+  const GPoint donut_orbit_perimeter_point = prv_get_donut_orbit_perimeter_point(&layer_bounds);
 
   const GEdgeInsets eye_rect_insets = GEdgeInsets(1);
 
   const GRect right_eye_rect = grect_inset(PBL_IF_ROUND_ELSE(GRect(53, 49, 33, 33),
                                                              GRect(52, 45, 35, 32)), eye_rect_insets);
-  prv_draw_pupil(ctx, seconds_angle, &right_eye_rect, &donut_orbit_perimeter_point);
+  prv_draw_pupil(ctx, &right_eye_rect, &donut_orbit_perimeter_point);
 
   const GRect left_eye_rect = grect_inset(PBL_IF_ROUND_ELSE(GRect(22, 48, 32, 31),
                                                             GRect(22, 45, 32, 29)), eye_rect_insets);
-  prv_draw_pupil(ctx, seconds_angle, &left_eye_rect, &donut_orbit_perimeter_point);
+  prv_draw_pupil(ctx, &left_eye_rect, &donut_orbit_perimeter_point);
 }
 
 static void prv_tick_timer_service_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -229,6 +245,14 @@ static void window_unload(Window *window) {
   window_destroy(window);
 }
 
+static void prv_configuration_changed_callback(SprinklesConfiguration *updated_configuration,
+                                               void *context) {
+  DonutAppData *data = context;
+  if (data) {
+    layer_mark_dirty(window_get_root_layer(data->window));
+  }
+}
+
 static void prv_app_did_focus(bool did_focus) {
   if (!did_focus) {
     return;
@@ -247,8 +271,12 @@ static void init(void) {
     .load = window_load,
     .unload = window_unload,
   });
-  const GColor simpsons_sky_blue = GColorFromHEX(0x60B8E3);
-  window_set_background_color(s_app_data->window, simpsons_sky_blue);
+
+  sprinkles_configuration_init();
+  sprinkles_configuration_set_callback(prv_configuration_changed_callback, s_app_data);
+
+  const SprinklesConfiguration *configuration = sprinkles_configuration_get_configuration();
+  window_set_background_color(s_app_data->window, configuration->background_color);
 
   tick_timer_service_subscribe(SECOND_UNIT, prv_tick_timer_service_handler);
 
@@ -261,6 +289,7 @@ static void init(void) {
 }
 
 static void deinit(void) {
+  sprinkles_configuration_deinit();
   free(s_app_data);
 }
 

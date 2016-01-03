@@ -32,7 +32,8 @@ static GRect prv_get_donut_rect(const GRect *layer_bounds, int32_t seconds_angle
   const GRect donut_orbit_rect = prv_get_donut_orbit_rect(layer_bounds);
   GRect donut_rect = grect_centered_from_polar(donut_orbit_rect, GOvalScaleModeFitCircle, seconds_angle,
                                                gbitmap_get_bounds(s_app_data->donut_bitmap).size);
-  donut_rect.origin.y = prv_interpolate_int64_linear(0, donut_rect.origin.y, s_app_data->intro_animation_progress);
+  donut_rect.origin.y = (int16_t)prv_interpolate_int64_linear(0, donut_rect.origin.y,
+                                                              s_app_data->intro_animation_progress);
   return donut_rect;
 }
 
@@ -70,8 +71,8 @@ static void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, cons
 
   const GRect seconds_forward_rect = prv_get_seconds_forward_rect(layer_bounds);
   // Interpolate the seconds forward rect so that the seconds hand grows out to pierce the donut
-  const int16_t inset = prv_interpolate_int64_linear(seconds_forward_rect.size.w / 2, 0,
-                                                     s_app_data->intro_animation_progress);
+  const int16_t inset = (int16_t)prv_interpolate_int64_linear(seconds_forward_rect.size.w / 2, 0,
+                                                              s_app_data->intro_animation_progress);
   const GRect interpolated_seconds_forward_rect = grect_inset(seconds_forward_rect, GEdgeInsets(inset));
 
   const GPoint seconds_forward_point = gpoint_from_polar(interpolated_seconds_forward_rect, GOvalScaleModeFitCircle,

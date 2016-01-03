@@ -13,9 +13,9 @@ typedef struct {
   int current_seconds;
   int current_minutes;
   int current_hours;
-} DonutAppData;
+} SprinklesAppData;
 
-static DonutAppData *s_app_data;
+static SprinklesAppData *s_app_data;
 
 static int64_t prv_interpolate_int64_linear(int64_t from, int64_t to, AnimationProgress progress) {
   return from + ((progress * (to - from)) / ANIMATION_NORMALIZED_MAX);
@@ -189,7 +189,7 @@ static Animation *prv_create_intro_animation(void) {
 }
 
 static void prv_start_intro_animation(void) {
-  DonutAppData *data = s_app_data;
+  SprinklesAppData *data = s_app_data;
   if (!data) {
     return;
   }
@@ -199,7 +199,7 @@ static void prv_start_intro_animation(void) {
 }
 
 static void window_load(Window *window) {
-  DonutAppData *data = window_get_user_data(window);
+  SprinklesAppData *data = window_get_user_data(window);
 
   Layer *root_layer = window_get_root_layer(window);
   const GRect root_layer_bounds = layer_get_bounds(root_layer);
@@ -232,7 +232,7 @@ static void window_load(Window *window) {
 }
 
 static void window_unload(Window *window) {
-  DonutAppData *data = window_get_user_data(window);
+  SprinklesAppData *data = window_get_user_data(window);
 
   layer_destroy(data->hands_layer);
   layer_destroy(data->homer_eyes_layer);
@@ -247,7 +247,7 @@ static void window_unload(Window *window) {
 
 static void prv_configuration_changed_callback(SprinklesConfiguration *updated_configuration,
                                                void *context) {
-  DonutAppData *data = context;
+  SprinklesAppData *data = context;
   if (data) {
     layer_mark_dirty(window_get_root_layer(data->window));
   }
@@ -262,8 +262,8 @@ static void prv_app_did_focus(bool did_focus) {
 }
 
 static void init(void) {
-  s_app_data = malloc(sizeof(DonutAppData));
-  memset(s_app_data, 0, sizeof(DonutAppData));
+  s_app_data = malloc(sizeof(SprinklesAppData));
+  memset(s_app_data, 0, sizeof(SprinklesAppData));
 
   s_app_data->window = window_create();
   window_set_user_data(s_app_data->window, s_app_data);

@@ -27,7 +27,10 @@ static GRect prv_get_seconds_forward_rect(const GRect *layer_bounds) {
 
 static GRect prv_get_donut_orbit_rect(const GRect *layer_bounds) {
   const GRect seconds_forward_rect = prv_get_seconds_forward_rect(layer_bounds);
-  return grect_inset(seconds_forward_rect, GEdgeInsets(seconds_forward_rect.size.w / 10));
+  const SprinklesConfiguration *configuration = sprinkles_configuration_get_configuration();
+  const unsigned int inset_factor_of_width = configuration->seconds_hand_enabled ? 10 : 5;
+  return grect_inset(seconds_forward_rect,
+                     GEdgeInsets(seconds_forward_rect.size.w / inset_factor_of_width));
 }
 
 static GRect prv_get_donut_rect(const GRect *layer_bounds, int32_t donut_angle) {
@@ -53,22 +56,28 @@ static GPoint prv_get_donut_orbit_perimeter_point(const GRect *layer_bounds) {
   return grect_center_point(&donut_rect);
 }
 
-static void prv_draw_major_hands(GContext *ctx, const GPoint *center, const GRect *hand_perimeter_rect, int32_t angle,
+static void prv_draw_major_hands(GContext *ctx, const GPoint *center, int32_t hand_length, int32_t angle,
                                  GColor color) {
-  // Draw the thin part of the hand
-  graphics_context_set_stroke_width(ctx, 2);
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  const GPoint perimeter_point = gpoint_from_polar(*hand_perimeter_rect, GOvalScaleModeFitCircle, angle);
-  graphics_draw_line(ctx, *center, perimeter_point);
+  GPoint points[] = {
+    {-3, 0},
+    {3, 0},
+    {6, (int16_t)-(hand_length - 8)},
+    {0, (int16_t)-hand_length},
+    {-6, (int16_t)-(hand_length - 8)},
+  };
 
-  // Draw the elongated part of the hand
-  graphics_context_set_stroke_color(ctx, color);
-  const uint8_t elongation_stroke_width = 9;
-  graphics_context_set_stroke_width(ctx, elongation_stroke_width);
-  const GRect elongation_perimeter_rect = grect_inset(*hand_perimeter_rect,
-                                                      GEdgeInsets(hand_perimeter_rect->size.w / 5));
-  const GPoint elongation_point = gpoint_from_polar(elongation_perimeter_rect, GOvalScaleModeFitCircle, angle);
-  graphics_draw_line(ctx, perimeter_point, elongation_point);
+  const GPathInfo path_info = (GPathInfo) {
+    .num_points = ARRAY_LENGTH(points),
+    .points = points,
+  };
+
+  GPath *path = gpath_create(&path_info);
+  gpath_move_to(path, *center);
+  gpath_rotate_to(path, angle);
+  graphics_context_set_fill_color(ctx, color);
+  gpath_draw_filled(ctx, path);
+
+  gpath_destroy(path);
 }
 
 static void prv_draw_seconds_hand(GContext *ctx, const GRect *layer_bounds, const GPoint *center) {
@@ -108,13 +117,13 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
 
   // Minutes
   const int32_t minutes_angle = s_app_data->current_minutes * TRIG_MAX_ANGLE / 60;
-  const GRect minutes_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 18));
-  prv_draw_major_hands(ctx, &center, &minutes_rect, minutes_angle, configuration->minute_hand_color);
+  const int32_t minutes_hand_length = layer_bounds.size.w * 4 / 9;
+  prv_draw_major_hands(ctx, &center, minutes_hand_length, minutes_angle, configuration->minute_hand_color);
 
   // Hours
   int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
-  const GRect hours_rect = grect_inset(layer_bounds, GEdgeInsets(layer_bounds.size.w / 7));
-  prv_draw_major_hands(ctx, &center, &hours_rect, hours_angle, configuration->hour_hand_color);
+  const int32_t hours_hand_length = layer_bounds.size.w * 2 / 7;
+  prv_draw_major_hands(ctx, &center, hours_hand_length, hours_angle, configuration->hour_hand_color);
 
   // Seconds (if enabled in the configuration)
   if (configuration->seconds_hand_enabled) {
@@ -249,6 +258,7 @@ static void prv_configuration_changed_callback(SprinklesConfiguration *updated_c
                                                void *context) {
   SprinklesAppData *data = context;
   if (data) {
+    window_set_background_color(data->window, updated_configuration->background_color);
     layer_mark_dirty(window_get_root_layer(data->window));
   }
 }

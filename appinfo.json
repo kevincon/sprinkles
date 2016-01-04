@@ -14,8 +14,9 @@
     "background_color": 0,
     "hour_hand_color": 1,
     "minute_hand_color": 2,
-    "seconds_hand_enabled": 3,
-    "seconds_hand_color": 4
+    "center_dot_color": 3,
+    "seconds_hand_enabled": 4,
+    "seconds_hand_color": 5
   },
   "preferences": {
     "embedded": true,
@@ -38,6 +39,12 @@
         "title": "Minute hand color",
         "type": "color",
         "default": "0xF0182D"
+      },
+      {
+        "name": "center_dot_color",
+        "title": "Center dot color",
+        "type": "color",
+        "default": "0x000000"
       },
       {
         "name": "seconds_hand_enabled",

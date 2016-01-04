@@ -16,6 +16,7 @@ static void prv_update_sprinkles_configuration(SprinklesConfiguration *configura
     .background_color = getBackground_color(),
     .hour_hand_color = getHour_hand_color(),
     .minute_hand_color = getMinute_hand_color(),
+    .center_dot_color = getCenter_dot_color(),
     .seconds_hand_enabled = getSeconds_hand_enabled(),
     .seconds_hand_color = getSeconds_hand_color(),
   };

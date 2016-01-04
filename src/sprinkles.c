@@ -130,8 +130,9 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
     prv_draw_seconds_hand(ctx, &layer_bounds, &center);
   }
 
-  // Draw the black dot in the center of the watchface
+  // Draw the dot in the center of the watchface
   const int16_t center_circle_radius = 5;
+  graphics_context_set_fill_color(ctx, configuration->center_dot_color);
   graphics_fill_circle(ctx, center, center_circle_radius);
 
   // Draw the donut

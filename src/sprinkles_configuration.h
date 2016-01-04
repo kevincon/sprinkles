@@ -6,6 +6,7 @@ typedef struct {
   GColor background_color;
   GColor hour_hand_color;
   GColor minute_hand_color;
+  GColor center_dot_color;
   bool seconds_hand_enabled;
   GColor seconds_hand_color;
 } SprinklesConfiguration;

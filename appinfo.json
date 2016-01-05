@@ -16,7 +16,10 @@
     "minute_hand_color": 2,
     "center_dot_color": 3,
     "seconds_hand_enabled": 4,
-    "seconds_hand_color": 5
+    "seconds_hand_color": 5,
+    "date_enabled": 6,
+    "date_background_color": 7,
+    "date_text_color": 8
   },
   "preferences": {
     "embedded": true,
@@ -48,7 +51,7 @@
       },
       {
         "name": "seconds_hand_enabled",
-        "title": "Enable seconds hand",
+        "title": "Show seconds hand",
         "type": "boolean",
         "default": false,
         "off-text": "Off",
@@ -57,6 +60,26 @@
       {
         "name": "seconds_hand_color",
         "title": "Seconds hand color",
+        "type": "color",
+        "default": "0x000000"
+      },
+      {
+        "name": "date_enabled",
+        "title": "Show date",
+        "type": "boolean",
+        "default": true,
+        "off-text": "Off",
+        "on-text": "On"
+      },
+      {
+        "name": "date_background_color",
+        "title": "Date background color",
+        "type": "color",
+        "default": "0xFFFFFF"
+      },
+      {
+        "name": "date_text_color",
+        "title": "Date text color",
         "type": "color",
         "default": "0x000000"
       }

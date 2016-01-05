@@ -19,6 +19,9 @@ static void prv_update_sprinkles_configuration(SprinklesConfiguration *configura
     .center_dot_color = getCenter_dot_color(),
     .seconds_hand_enabled = getSeconds_hand_enabled(),
     .seconds_hand_color = getSeconds_hand_color(),
+    .date_enabled = getDate_enabled(),
+    .date_background_color = getDate_background_color(),
+    .date_text_color = getDate_text_color(),
   };
 }
 

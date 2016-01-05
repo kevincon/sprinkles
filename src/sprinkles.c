@@ -8,6 +8,7 @@ typedef struct {
   BitmapLayer *homer_layer;
   Layer *homer_eyes_layer;
   GBitmap *donut_bitmap;
+  Layer *date_layer;
   Layer *hands_layer;
   AnimationProgress intro_animation_progress;
   int current_seconds;
@@ -163,6 +164,32 @@ void prv_draw_pupil(GContext *ctx, const GRect *eye_rect, const GPoint *perimete
   graphics_fill_radial(ctx, pupil_rect, GOvalScaleModeFitCircle, pupil_radius, 0, TRIG_MAX_ANGLE);
 }
 
+static void prv_date_layer_update_proc(Layer *layer, GContext *ctx) {
+  const SprinklesConfiguration *configuration = sprinkles_configuration_get_configuration();
+  if (!configuration->date_enabled) {
+    return;
+  }
+
+  const GRect layer_bounds = layer_get_bounds(layer);
+  GRect date_rect = (GRect) { .size = GSize(24, layer_bounds.size.h) };
+  grect_align(&date_rect, &layer_bounds, GAlignCenter, true /* clip */);
+
+  graphics_context_set_fill_color(ctx, configuration->date_background_color);
+  graphics_fill_rect(ctx, date_rect, 3, GCornersAll);
+
+  // Push the date_rect up a little bit to account for the font cap offset
+  date_rect.origin.y -= 4;
+
+  graphics_context_set_text_color(ctx, configuration->date_text_color);
+  const GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  char date_string[3] = {0};
+  const time_t current_time = time(NULL);
+  struct tm *current_time_tm = localtime(&current_time);
+  strftime(date_string, ARRAY_LENGTH(date_string), "%d", current_time_tm);
+  graphics_draw_text(ctx, date_string, font, date_rect, GTextOverflowModeTrailingEllipsis,
+                     GTextAlignmentCenter, NULL);
+}
+
 static void prv_homer_eyes_layer_update_proc(Layer *layer, GContext *ctx) {
   const GRect layer_bounds = layer_get_bounds(layer);
 
@@ -236,6 +263,14 @@ static void window_load(Window *window) {
   bitmap_layer_set_compositing_mode(data->homer_layer, GCompOpSet);
   layer_add_child(root_layer, bitmap_layer_get_layer(data->homer_layer));
 
+  const int16_t date_layer_width = PBL_IF_RECT_ELSE(41, 58);
+  const int16_t date_layer_height = 17;
+  GRect date_layer_frame = (GRect) { .size = GSize(date_layer_width, date_layer_height) };
+  grect_align(&date_layer_frame, &root_layer_bounds, GAlignRight, true /* clip */);
+  data->date_layer = layer_create(date_layer_frame);
+  layer_set_update_proc(data->date_layer, prv_date_layer_update_proc);
+  layer_add_child(root_layer, data->date_layer);
+
   data->homer_eyes_layer = layer_create(homer_bitmap_layer_frame);
   layer_set_update_proc(data->homer_eyes_layer, prv_homer_eyes_layer_update_proc);
   layer_add_child(root_layer, data->homer_eyes_layer);
@@ -256,6 +291,7 @@ static void window_unload(Window *window) {
 
   layer_destroy(data->hands_layer);
   layer_destroy(data->homer_eyes_layer);
+  layer_destroy(data->date_layer);
 
   gbitmap_destroy(data->donut_bitmap);
 

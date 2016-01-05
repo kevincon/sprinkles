@@ -9,6 +9,9 @@ typedef struct {
   GColor center_dot_color;
   bool seconds_hand_enabled;
   GColor seconds_hand_color;
+  bool date_enabled;
+  GColor date_background_color;
+  GColor date_text_color;
 } SprinklesConfiguration;
 
 typedef void (*SprinklesConfigurationChangedCallback)(SprinklesConfiguration *updated_configuration,

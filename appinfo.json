@@ -23,7 +23,6 @@
   },
   "preferences": {
     "embedded": true,
-    "description": "Modify the settings below as needed and then click SAVE.",
     "items": [
       {
         "name": "background_color",
@@ -52,6 +51,7 @@
       {
         "name": "seconds_hand_enabled",
         "title": "Show seconds hand",
+        "description": "Disabling will move donut to minute hand",
         "type": "boolean",
         "default": false,
         "off-text": "Off",

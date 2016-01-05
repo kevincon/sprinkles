@@ -129,7 +129,7 @@ static void prv_hands_layer_update_proc(Layer *layer, GContext *ctx) {
 
   // Hours
   int32_t hours_angle = ((s_app_data->current_hours * TRIG_MAX_ANGLE) + minutes_angle) / 12;
-  const int32_t hours_hand_length = layer_bounds.size.w * 2 / 7;
+  const int32_t hours_hand_length = layer_bounds.size.w * 32 / 100;
   prv_draw_major_hands(ctx, &center, hours_hand_length, hours_angle,
                        configuration->hour_hand_color);
 

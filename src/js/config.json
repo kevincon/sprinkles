@@ -1,0 +1,72 @@
+[
+{
+  "type": "section",
+  "items": [
+    { "type": "heading", "defaultValue": "Sprinkles" },
+    {
+      "type": "color",
+      "id": "background_color",
+      "appKey": "background_color",
+      "defaultValue": "60B8E3",
+      "label": "Background color"
+    },
+    {
+      "type": "color",
+      "id": "hour_hand_color",
+      "appKey": "hour_hand_color",
+      "defaultValue": "F0182D",
+      "label": "Hour hand color"
+    },
+    {
+      "type": "color",
+      "id": "minute_hand_color",
+      "appKey": "minute_hand_color",
+      "defaultValue": "F0182D",
+      "label": "Minute hand color"
+    },
+    {
+      "type": "color",
+      "id": "center_dot_color",
+      "appKey": "center_dot_color",
+      "defaultValue": "000000",
+      "label": "Center dot color"
+    },
+    {
+      "type": "toggle",
+      "id": "seconds_hand_enabled",
+      "appKey": "seconds_hand_enabled",
+      "label": "Show seconds hand",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "seconds_hand_color",
+      "appKey": "seconds_hand_color",
+      "defaultValue": "000000",
+      "label": "Seconds hand color"
+    },
+    {
+      "type": "toggle",
+      "id": "date_enabled",
+      "appKey": "date_enabled",
+      "label": "Show date",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "date_background_color",
+      "appKey": "date_background_color",
+      "defaultValue": "FFFFFF",
+      "label": "Date background color"
+    },
+    {
+      "type": "color",
+      "id": "date_text_color",
+      "appKey": "date_text_color",
+      "defaultValue": "000000",
+      "label": "Date text color"
+    }
+  ]
+},
+{ "type": "submit", "defaultValue": "Done" }
+]

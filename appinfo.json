@@ -7,6 +7,7 @@
   "sdkVersion": "3",
   "targetPlatforms": ["aplite", "basalt", "chalk"],
   "capabilities": ["configurable"],
+  "enableMultiJS": true,
   "watchapp": {
     "watchface": true
   },
@@ -20,70 +21,6 @@
     "date_enabled": 6,
     "date_background_color": 7,
     "date_text_color": 8
-  },
-  "preferences": {
-    "embedded": true,
-    "items": [
-      {
-        "name": "background_color",
-        "title": "Background color",
-        "type": "color",
-        "default": "0x60B8E3"
-      },
-      {
-        "name": "hour_hand_color",
-        "title": "Hour hand color",
-        "type": "color",
-        "default": "0xF0182D"
-      },
-      {
-        "name": "minute_hand_color",
-        "title": "Minute hand color",
-        "type": "color",
-        "default": "0xF0182D"
-      },
-      {
-        "name": "center_dot_color",
-        "title": "Center dot color",
-        "type": "color",
-        "default": "0x000000"
-      },
-      {
-        "name": "seconds_hand_enabled",
-        "title": "Show seconds hand",
-        "description": "Disabling will move donut to minute hand",
-        "type": "boolean",
-        "default": false,
-        "off-text": "Off",
-        "on-text": "On"
-      },
-      {
-        "name": "seconds_hand_color",
-        "title": "Seconds hand color",
-        "type": "color",
-        "default": "0x000000"
-      },
-      {
-        "name": "date_enabled",
-        "title": "Show date",
-        "type": "boolean",
-        "default": true,
-        "off-text": "Off",
-        "on-text": "On"
-      },
-      {
-        "name": "date_background_color",
-        "title": "Date background color",
-        "type": "color",
-        "default": "0xFFFFFF"
-      },
-      {
-        "name": "date_text_color",
-        "title": "Date text color",
-        "type": "color",
-        "default": "0x000000"
-      }
-    ]
   },
   "resources": {
     "media": [

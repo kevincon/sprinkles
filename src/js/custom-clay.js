@@ -13,5 +13,12 @@ module.exports = function(minified) {
         });
       });
     };
+    Clay.getItemsByType('color').map( function(item) {
+      var color = item.get();
+      var r = Math.floor((((color >> 16) & 0xFF) + 42) / 85) * 85;
+      var g = Math.floor((((color >>  8) & 0xFF) + 42) / 85) * 85;
+      var b = Math.floor((((color >>  0) & 0xFF) + 42) / 85) * 85;
+      item.set((r << 16) + (g << 8) + b);
+    });
   });
 };

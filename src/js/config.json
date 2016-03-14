@@ -36,7 +36,7 @@
       "id": "seconds_hand_enabled",
       "appKey": "seconds_hand_enabled",
       "label": "Show seconds hand",
-      "default": false
+      "defaultValue": false
     },
     {
       "type": "color",
@@ -50,7 +50,7 @@
       "id": "date_enabled",
       "appKey": "date_enabled",
       "label": "Show date",
-      "default": true
+      "defaultValue": true
     },
     {
       "type": "color",

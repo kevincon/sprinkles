@@ -35,6 +35,7 @@
       "type": "toggle",
       "id": "seconds_hand_enabled",
       "appKey": "seconds_hand_enabled",
+      "description": "Disabling will move donut to minute hand",
       "label": "Show seconds hand",
       "defaultValue": false
     },

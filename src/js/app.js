@@ -10,6 +10,12 @@ Pebble.addEventListener('showConfiguration', function(e) {
     var config = {};
     config[attr.id] = attr.value;
     console.log(JSON.stringify(config));
+    
+    // save the setting in the localstorage
+    var settings = JSON.parse(localStorage.getItem('clay-settings')) || {};
+    settings[attr.id] = attr.value;
+    localStorage.setItem('clay-settings', JSON.stringify(settings));
+
     Pebble.sendAppMessage(config);
   };
   Pebble.openURL(clay.generateUrl());

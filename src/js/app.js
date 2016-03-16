@@ -16,7 +16,7 @@ Pebble.addEventListener('showConfiguration', function(e) {
     settings[attr.id] = attr.value;
     localStorage.setItem('clay-settings', JSON.stringify(settings));
 
-    Pebble.sendAppMessage(config);
+    Pebble.sendAppMessage(Clay.prepareSettingsForAppMessage(config));
   };
   Pebble.openURL(clay.generateUrl());
 });

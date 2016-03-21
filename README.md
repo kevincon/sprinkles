@@ -37,10 +37,10 @@ pebble sdk list # list the available versions of the SDK
 pebble sdk install X.Y # replace "X.Y" with any newer version of the SDK
 ```
 
-This is a little bit of a hack, but pebble-autoconfig has some Python requirements that you must install into the site-packages directory used by the Pebble SDK. This is the command I used to install them at time of writing, but it might be slightly different in the future (e.g. the "4.0" might change as the Pebble SDK is upgradedto newer versions).
+This is a little bit of a hack, but enamel has some Python requirements that you must install into the site-packages directory used by the Pebble SDK. This is the command I used to install them at time of writing, but it might be slightly different in the future (e.g. the "4.0" might change as the Pebble SDK is upgradedto newer versions).
 
 ```
-pip install --target=/usr/local/Cellar/pebble-sdk/4.0/libexec/vendor/lib/python2.7/site-packages/ -r ./pebble-autoconfig/requirements.txt
+pip install --target=/usr/local/Cellar/pebble-sdk/4.0/libexec/vendor/lib/python2.7/site-packages/ -r ./enamel/requirements.txt
 ```
 
 Finally, build the watchface:
